@@ -12,21 +12,22 @@ class Mouton : public sf::RectangleShape
         static const int INPUTS = 17;
         static const int OUTPUTS = 5;
         static const int INNER_VISION = 5;
-        static const int OUTER_VISION = 800;
-        static const int RANGE = 75;
-        Mouton(StateGame* stategame);
-        Mouton(StateGame* stategame, Mouton parent);
+        static const int OUTER_VISION = 90;
+        static const int RANGE = 12;
+        Mouton(StateGame* stategame, sf::Vector2u paddock);
+        Mouton(StateGame* stategame, Mouton parent, sf::Vector2u paddock, int mut = 2);
         virtual ~Mouton();
         void act(float delta);
         std::vector<unsigned char> getLinks();
         void printLinks();
+        inline sf::Vector2f getFoodPos() { return foodPos; };
+        inline sf::Vector2u getPaddock() { return m_paddock; };
+        inline void setPaddock(sf::Vector2u p) { m_paddock = p; };
 
-         bool dead = false;
-         double food = 30;
-         int score = 0;
+        int score = 0;
     private:
 
-        double timeleft = 600;
+        sf::Vector2f foodPos;
 
         void doAction(unsigned char action);
         void handleInput(unsigned char input);
@@ -45,6 +46,8 @@ class Mouton : public sf::RectangleShape
         float ldelta;
 
         StateGame* game;
+
+        sf::Vector2u m_paddock;
 };
 
 #endif // MOUTON_H

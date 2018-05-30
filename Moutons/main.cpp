@@ -14,7 +14,7 @@ int main()
 {
     srand(time(NULL));
 
-    sf::RenderWindow window(sf::VideoMode(1200, 1000), "The Sheep's Crisis");
+    sf::RenderWindow window(sf::VideoMode(800, 630), "The Sheep's Crisis");
 
     State *currentState = new StateGame();
 
@@ -58,7 +58,7 @@ int main()
             {
                 if (dt)
                 {
-                    currentState->update(clk.restart().asSeconds() * 2);
+                    currentState->update(clk.restart().asSeconds() * 10);
                 }
                 else
                 {

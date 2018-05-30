@@ -12,11 +12,25 @@ class StateGame : public State
         virtual ~StateGame();
         void draw(sf::RenderWindow &window) override;
         void update(float delta) override;
+
         std::vector<Mouton> sheeps;
-        std::vector<Coco> coconuts;
+
         sf::Texture texture;
-    protected:
+        sf::Texture donut;
+        sf::Texture paddock;
+        sf::Font font;
+
+        void createNewGeneration();
     private:
+        sf::RectangleShape square;
+        sf::CircleShape food;
+        sf::Text scoreText;
+        sf::Text info;
+        float time;
+        float lifetime = 100.f;
+        int gen = 0;
+        int scoremax = 0;
+        Mouton bestMouton;
 };
 
 #endif // STATEGAME_H

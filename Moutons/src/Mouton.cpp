@@ -3,31 +3,39 @@
 #include <math.h>
 #include "StateGame.h"
 
-Mouton::Mouton(StateGame* stategame)
+Mouton::Mouton(StateGame* stategame, sf::Vector2u paddock)
 {
     game = stategame;
-    setSize(sf::Vector2f(50, 50));
-    setOrigin(sf::Vector2f(25, 25));
-    setPosition(sf::Vector2f(rand() % 1200, rand() % 1000));
-    setFillColor(sf::Color::White);
+    setSize(sf::Vector2f(30, 30));
+    setOrigin(sf::Vector2f(15, 15));
+    setPosition(sf::Vector2f(paddock.x * 200 + rand() % 200, paddock.y * 200 + rand() % 200));
+    foodPos = sf::Vector2f(paddock.x * 200 + rand() % 100 + 50, paddock.y * 200 + rand() % 100 + 50);
+    setRotation(rand() % 360);
+    m_paddock = paddock;
+    setTexture(&game->texture);
+    setFillColor(sf::Color(rand() % 240 + 10, rand() % 240 + 10, rand() % 240 + 10));
+
     initRandLinks();
-    //printLinks();
 
-    setTexture(&game->texture);
+
 }
 
-Mouton::Mouton(StateGame* stategame, Mouton parent)
+Mouton::Mouton(StateGame* stategame, Mouton parent, sf::Vector2u paddock, int mut)
 {
     game = stategame;
-    setSize(sf::Vector2f(50, 50));
-    setOrigin(sf::Vector2f(25, 25));
+    setSize(sf::Vector2f(30, 30));
+    setOrigin(sf::Vector2f(15, 15));
     setFillColor(sf::Color::White);
-    setPosition(parent.getPosition());
-    initLinks(&parent, 11 - score);
-    //printLinks();
-
+    setPosition(sf::Vector2f(paddock.x * 200 + rand() % 200, paddock.y * 200 + rand() % 200));
+    foodPos = sf::Vector2f(paddock.x * 200 + rand() % 100 + 50, paddock.y * 200 + rand() % 100 + 50);
+    setRotation(rand() % 360);
+    m_paddock = paddock;
     setTexture(&game->texture);
+    setFillColor(sf::Color(rand() % 240 + 10, rand() % 240 + 10, rand() % 240 + 10));
+
+    initLinks(&parent, mut);
 }
+
 
 Mouton::~Mouton()
 {
@@ -43,52 +51,24 @@ void Mouton::printLinks()
 
 void Mouton::act(float delta)
 {
-    setFillColor(sf::Color(255, 255 - (score / 10) * 255, 255));
     ldelta = delta;
     handleAllInputs();
-    if (getPosition().x < 0)
-        setPosition(0, getPosition().y);
-    if (getPosition().x > 1200)
-        setPosition(1200, getPosition().y);
-    if (getPosition().y < 0)
-        setPosition(getPosition().x, 0);
-    if (getPosition().y > 1000)
-        setPosition(getPosition().x, 1000);
+    if (getPosition().x < (m_paddock.x * 200 + 10))
+        setPosition((m_paddock.x * 200 + 10), getPosition().y);
+    if (getPosition().x > (m_paddock.x * 200 + 190))
+        setPosition((m_paddock.x * 200 + 190), getPosition().y);
+    if (getPosition().y < (m_paddock.y * 200 + 10))
+        setPosition(getPosition().x, (m_paddock.y * 200 + 10));
+    if (getPosition().y > (m_paddock.y * 200 + 190))
+        setPosition(getPosition().x, (m_paddock.y * 200 + 190));
     int f = 0;
-    for (int i = 0; i < game->coconuts.size(); i++)
+
+    if (getDistance(foodPos) <= RANGE)
     {
-        if (getDistance(game->coconuts.at(i - f).getPosition()) < (RANGE + 5))
-        {
-            game->coconuts.erase(game->coconuts.begin() + i - f);
-            f++;
-            food += 50;
-            if (score < 10)
-                score += 1;
-            game->coconuts.push_back(Coco(game, sf::Vector2f(rand() % 1200, rand() % 1000)));
-        }
-    }
-    food -= delta;
-    timeleft -= delta;
-    if (food <= 0)
-    {
-        dead = true;
-        game->sheeps.push_back(Mouton(game));
-        return;
-    }
-    if (timeleft <= 0)
-    {
-        dead = true;
-        return;
-    }
-    if (food > 150)
-    {
-        game->sheeps.push_back(Mouton(game, *this));
-        food -= 120;
+        score += 1;
+        foodPos = sf::Vector2f(m_paddock.x * 200 + rand() % 100 + 50, m_paddock.y * 200 + rand() % 100 + 50);
     }
 
-    //std::cout << food << '\n';
-    //if (getInputState(6))
-    //std::cout << "Coco in my range" << std::endl;
 }
 
 void Mouton::doAction(unsigned char action)
@@ -140,55 +120,32 @@ bool Mouton::getInputState(unsigned char input)
     bool res = false;
     switch (inp)
     {
-    //Coconuts
-    case 0: //Coconut in front
-        for (int i = 0; i < game->coconuts.size(); i++)
+    //Food
+    case 0: //Food in front
+        if (abs(getAngularPos(foodPos)) < INNER_VISION && getDistance(foodPos) > RANGE)
+            res = true;
+        break;
+    case 1: //Food at the right
         {
-            Coco* coconut = &game->coconuts[i];
-            if (abs(getAngularPos(coconut->getPosition())) < INNER_VISION && getDistance(coconut->getPosition()) > RANGE)
-            {
+            double agpos = getAngularPos(foodPos);
+            if (agpos > 0 && agpos > INNER_VISION && agpos < OUTER_VISION && getDistance(foodPos) > RANGE)
                 res = true;
-                break;
-            }
         }
         break;
-    case 1: //Coconut at the right
-        for (int i = 0; i < game->coconuts.size(); i++)
+    case 2: //Food at the left
         {
-            Coco* coconut = &game->coconuts[i];
-            double agpos = getAngularPos(coconut->getPosition());
-            if (agpos > 0 && agpos > INNER_VISION && agpos < OUTER_VISION && getDistance(coconut->getPosition()) > RANGE)
-            {
+            double agpos = getAngularPos(foodPos);
+            if (agpos < 0 && agpos < -INNER_VISION && agpos > -OUTER_VISION && getDistance(foodPos) > RANGE)
                 res = true;
-                break;
-            }
         }
         break;
-    case 2: //Coconut at the left
-        for (int i = 0; i < game->coconuts.size(); i++)
-        {
-            Coco* coconut = &game->coconuts[i];
-            double agpos = getAngularPos(coconut->getPosition());
-            if (agpos < 0 && agpos < -INNER_VISION && agpos > -OUTER_VISION && getDistance(coconut->getPosition()) > RANGE)
-            {
-                res = true;
-                break;
-            }
-        }
-        break;
-    case 3:
-        for (int i = 0; i < game->coconuts.size(); i++)
-        {
-            Coco* coconut = &game->coconuts[i];
-            if (getDistance(coconut->getPosition()) < RANGE)
-            {
-                res = true;
-                break;
-            }
-        }
+    case 3: //Food near
+        if (getDistance(foodPos) < RANGE)
+            res = true;
         break;
     //Sheeps
     case 4: //sheep in front
+        /*
         for (int i = 0; i < game->sheeps.size(); i++)
         {
             Mouton* sheep = &game->sheeps[i];
@@ -198,8 +155,10 @@ bool Mouton::getInputState(unsigned char input)
                 break;
             }
         }
+        */
         break;
     case 5: //Coconut at the right
+        /*
         for (int i = 0; i < game->coconuts.size(); i++)
         {
             Mouton* sheep = &game->sheeps[i];
@@ -210,8 +169,10 @@ bool Mouton::getInputState(unsigned char input)
                 break;
             }
         }
+        */
         break;
     case 6: //Coconut at the left
+        /*
         for (int i = 0; i < game->coconuts.size(); i++)
         {
             Mouton* sheep = &game->sheeps[i];
@@ -222,8 +183,10 @@ bool Mouton::getInputState(unsigned char input)
                 break;
             }
         }
+        */
         break;
     case 7:
+        /*
         for (int i = 0; i < game->coconuts.size(); i++)
         {
             Mouton* sheep = &game->sheeps[i];
@@ -233,6 +196,7 @@ bool Mouton::getInputState(unsigned char input)
                 break;
             }
         }
+        */
         break;
     case 8:
         res = false;
